@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRoles {
+  CONSUMER
+  SELLER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum SellerOrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+model User {
+  id                    String    @id @default(uuid()) @db.Uuid
+  email                 String    @unique
+  username              String    @unique
+  name                  String?
+  hash_password         String
+  mobile_no             String
+  alternative_mobile_no String?
+  user_role             UserRoles @default(CONSUMER)
+  refresh_token         String?
+  user_profile_pic      String?   @default("https://img.icons8.com/?size=100&id=23242&format=png&color=000000")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  addresses    Address[]
+  orders       Order[]
+  products     Product[]
+  sellerOrders SellerOrder[]
+
+  @@map("users")
+}
+
+model Address {
+  id           String  @id @default(uuid()) @db.Uuid
+  user_id      String  @db.Uuid
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  country      String
+  postalCode   String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  orders Order[]
+  user   User    @relation(fields: [user_id], references: [id], map: "addresses_user_id_fkey")
+
+  @@index([user_id], map: "addresses_user_id_idx")
+  @@map("addresses")
+}
+
+model Order {
+  id           String  @id @default(uuid()) @db.Uuid
+  user_id      String  @db.Uuid
+  address_id   String  @db.Uuid
+  total_amount Decimal
+
+  status         OrderStatus   @default(PENDING)
+  payment_status PaymentStatus @default(PENDING)
+
+  shippingName        String
+  shippingPhone       String
+  shippingAddressLine String
+  shippingCity        String
+  shippingState       String
+  shippingCountry     String
+  shippingPostalCode  String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  items        OrderItem[]
+  payments     Payment[]
+  sellerOrders SellerOrder[]
+
+  user    User    @relation(fields: [user_id], references: [id], map: "orders_user_id_fkey")
+  address Address @relation(fields: [address_id], references: [id], map: "orders_address_id_fkey")
+
+  @@index([user_id], map: "orders_user_id_idx")
+  @@index([address_id], map: "orders_address_id_idx")
+  @@map("orders")
+}
+
+model Category {
+  id            String @id @default(uuid()) @db.Uuid()
+  category_name String @unique @default("all")
+
+  products Product[] @relation(map: "products_category_id_fkey")
+
+  @@map("categories")
+}
+
+model Product {
+  id           String   @id @default(uuid()) @db.Uuid
+  seller_id    String   @db.Uuid
+  category_id  String   @db.Uuid
+  product_name String
+  price        Decimal
+  quantity     Int
+  description  String?
+  image_url    String
+  tag          String[]
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  orderItems OrderItem[]
+  user       User        @relation(fields: [seller_id], references: [id], map: "products_seller_id_fkey")
+  category   Category    @relation(fields: [category_id], references: [id], map: "products_category_id_fkey")
+
+  @@index([seller_id], map: "products_seller_id_idx")
+  @@map("products")
+}
+
+model SellerOrder {
+  id                String            @id @default(uuid()) @db.Uuid
+  order_id          String            @db.Uuid
+  seller_id         String            @db.Uuid
+  total_amount      Decimal
+  status            SellerOrderStatus @default(PENDING)
+  tracking_number   String?
+  shipping_provider String?
+  shipped_at        DateTime?         @db.Timestamptz(3)
+  delivered_at      DateTime?         @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  items  OrderItem[]
+  order  Order       @relation(fields: [order_id], references: [id], map: "seller_orders_order_id_fkey")
+  seller User        @relation(fields: [seller_id], references: [id], map: "seller_orders_seller_id_fkey")
+
+  @@index([order_id], map: "seller_orders_order_id_idx")
+  @@index([seller_id], map: "seller_orders_seller_id_idx")
+  @@map("seller_orders")
+}
+
+model OrderItem {
+  id              String  @id @default(uuid()) @db.Uuid
+  order_id        String  @db.Uuid
+  seller_order_id String  @db.Uuid
+  product_id      String  @db.Uuid
+  quantity        Int
+  unit_price      Decimal
+  subtotal        Decimal
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  order       Order       @relation(fields: [order_id], references: [id], map: "order_items_order_id_fkey")
+  sellerOrder SellerOrder @relation(fields: [seller_order_id], references: [id], map: "order_items_seller_order_id_fkey")
+  product     Product     @relation(fields: [product_id], references: [id], map: "order_items_product_id_fkey")
+
+  @@index([order_id], map: "order_items_order_id_idx")
+  @@index([seller_order_id], map: "order_items_seller_order_id_idx")
+  @@index([product_id], map: "order_items_product_id_idx")
+  @@map("order_items")
+}
+
+model Payment {
+  id                 String        @id @default(uuid()) @db.Uuid
+  order_id           String        @db.Uuid
+  amount             Decimal
+  payment_method     String
+  payment_status     PaymentStatus @default(PENDING)
+  gateway_name       String
+  transaction_id     String?
+  gateway_order_id   String?
+  gateway_payment_id String?
+  failure_reason     String?
+  paid_at            DateTime?     @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  order Order @relation(fields: [order_id], references: [id], map: "payments_order_id_fkey")
+
+  @@index([order_id], map: "payments_order_id_idx")
+  @@map("payments")
+}
