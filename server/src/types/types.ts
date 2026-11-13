@@ -28,3 +28,19 @@ export type AddressDataType = {
   country: string,
   postalCode: string
 }
+
+export type ProductDataType = {
+  seller_id: string
+  category_id: string
+  product_name: string
+  price: number
+  quantity: number
+  description?: string
+  image_url: string
+  tags: string
+}
+
+export type RateLimitOptions = {
+  windowMs?: number;
+  maxRequests?: number;
+}

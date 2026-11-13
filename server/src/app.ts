@@ -5,12 +5,21 @@ import { errorMiddleware } from './middlewares/error.middleware';
 import { authRouter } from './routes/auth.route';
 import { userRoute } from './routes/user.route';
 import { categoryRouter } from './routes/category.route';
+import { rateLimiter } from './middlewares/rateLimiter';
 
 export const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(corsConfig);
+
+// Global rate limiter
+app.use(
+  rateLimiter({
+    windowMs: 60 * 1000, //1 min
+    maxRequests: 100, //100 requests
+  })
+);
 
 //All routes
 app.use('/api/v1/auth/user', authRouter);
