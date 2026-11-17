@@ -5,30 +5,22 @@ import { errorMiddleware } from './middlewares/error.middleware';
 import { authRouter } from './routes/auth.route';
 import { userRoute } from './routes/user.route';
 import { categoryRouter } from './routes/category.route';
-import { rateLimiter } from './middlewares/rateLimiter';
-
+import { globalRateLimiter } from './middlewares/rateLimitPolicies';
+import metricsRouter from './routes/metrics.router';
+import { productRouter } from './routes/product.route';
 export const app = express();
+
+// Configure only according to your trusted proxy topology.
+// For local development, leave this disabled.
+if (process.env.TRUST_PROXY === "1") {
+  app.set("trust proxy", 1);
+}
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(corsConfig);
 
-// Global rate limiter
-app.use(
-  rateLimiter({
-    windowMs: 60 * 1000, //1 min
-    maxRequests: 100, //100 requests
-  })
-);
-
-//All routes
-app.use('/api/v1/auth/user', authRouter);
-app.use('/api/v1/user', userRoute);
-app.use('/api/v1/admin/category', categoryRouter);
-
-//Middlewares for error
-app.use(errorMiddleware);
-
+//health route
 app.use('/api/v1/health', (req : Request, res : Response) => {
   try {
     return res.status(200).json({
@@ -44,9 +36,23 @@ app.use('/api/v1/health', (req : Request, res : Response) => {
   }
 })
 
+app.use(globalRateLimiter);
+
+//All routes
+app.use('/api/v1/metrics', metricsRouter);
+app.use('/api/v1/auth/user', authRouter);
+app.use('/api/v1/user', userRoute);
+app.use('/api/v1/admin/category', categoryRouter);
+app.use('/api/v1', productRouter);
+
+//Middlewares for error
+app.use(errorMiddleware);
+
 app.use("/api/v1/{*splat}", (req, res) => {
   res.status(404).json({
     success: false,
     message: "Route not found",
   });
 });
+
+export default app;

@@ -7,7 +7,7 @@ export async function createCategoryService(data : CategoryDataType){
 
     const category = await prisma.category.create({
       data : {
-        category_name : category_name
+        category_name : category_name.toLowerCase()
       }
     })
 

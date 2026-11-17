@@ -133,9 +133,10 @@ model Product {
   product_name String
   price        Decimal
   quantity     Int
-  description  String?
+  description  String
   image_url    String
   tag          String[]
+  category_name String
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)

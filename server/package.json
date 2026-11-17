@@ -20,6 +20,8 @@
   "dependencies": {
     "@prisma/adapter-pg": "7.6.0",
     "@prisma/client": "7.6.0",
+    "@prometheus-io/client": "^0.16.1",
+    "@types/multer": "^2.3.0",
     "argon2": "^0.45.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
